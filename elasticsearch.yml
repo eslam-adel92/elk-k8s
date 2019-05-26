@@ -1,1 +1,121 @@
 # This is the elastic search statefulset file
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elastic-svc
+  labels:
+    app: elastic
+spec:
+  selector:
+    app: elastic
+  ports:
+  - name: elastic-http
+    port: 9200
+  - name: elastic-tcp
+    port: 9300
+
+#######################################
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elastic-config
+  labels:
+    app: elastic
+data:
+  config : |
+    ---
+    cluster.name: "docker-cluster"
+    network.host: 0.0.0.0
+    discovery.type: single-node
+    xpack.license.self_generated.type: basic
+    xpack.security.enabled: true
+    xpack.monitoring.collection.enabled: true
+
+#######################################
+---
+apiVersion: storage.k8s.io/v1beta1
+kind: StorageClass
+metadata:
+  name: standard
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-standard
+  zone: us-central1-a
+
+#######################################
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elastic
+  labels:
+    app: elastic
+spec:
+  serviceName: elastic
+  replicas: 3
+  selector:
+    matchLabels:
+      app: elastic
+  template:
+    metadata:
+      labels:
+        app: elastic
+    spec:
+      containers:
+      - name: elastic
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.1.0
+        imagePullPolicy: Always
+        ports:
+        - name: elastic-http
+          containerPort: 9200
+        - name: elastic-tcp
+          containerPort: 9300
+        env:
+          - name: ES_JAVA_OPTS
+            value: -Xmx256m -Xms256m
+          - name: ELASTIC_PASSWORD
+            value: changeme
+        volumeMounts:
+        - name: elastic-data
+          mountPath: /usr/share/elasticsearch/data
+        - name: elastic-config-vol
+          mountPath: /usr/share/elasticsearch/config/
+
+        # livenessProbe:
+        #   exec:
+        #     command: ["mysqladmin", "ping"]
+        #   initialDelaySeconds: 50
+        #   periodSeconds: 20
+        #   timeoutSeconds: 100
+        #   successThreshold: 1
+        #   failureThreshold: 10
+        # readinessProbe:
+        #   exec:
+        #     command:
+        #     - bash
+        #     - "-c"
+        #     - set -ex
+        #       /readiness.sh
+        #   initialDelaySeconds: 50
+        #   periodSeconds: 20
+        #   timeoutSeconds: 100
+        #   successThreshold: 2
+        #   failureThreshold: 10
+      volumes:
+      - name: elastic-config-vol
+        configMap:
+          name: elastic-config
+          items:
+          - key: config
+            path: elasticsearch.yml
+
+  volumeClaimTemplates:
+  - metadata:
+      name: elastic-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 3Gi
