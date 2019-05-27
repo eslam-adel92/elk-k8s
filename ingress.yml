@@ -1,0 +1,16 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  # annotations:
+  #   nginx.ingress.kubernetes.io/rewrite-target: /
+  name: elk-ingress
+  namespace: default
+spec:
+  rules:
+  - host: test.elk.me
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: kibana-svc
+          servicePort: 5601
