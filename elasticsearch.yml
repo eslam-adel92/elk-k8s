@@ -63,6 +63,29 @@ spec:
       labels:
         app: elastic
     spec:
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+        runAsGroup: 1000
+      initContainers:
+        # Fix the permissions on the volume.
+        # https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_notes_for_production_use_and_defaults
+        # - name: fix-data-permission
+        #   image: busybox
+        #   command: ['sh', '-c', 'chown -R 1000:1000 /usr/share/elasticsearch/data']
+        #   securityContext:
+        #     privileged: true
+        #   volumeMounts:
+        #     - name: elastic-data
+        #       mountPath: /usr/share/elasticsearch/data
+        - name: fix-config-permission
+          image: busybox
+          command: ['sh', '-c', 'chown -R 1000:1000 /usr/share/elasticsearch/config/']
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: elastic-config-vol
+              mountPath: /usr/share/elasticsearch/config
       containers:
       - name: elastic
         image: docker.elastic.co/elasticsearch/elasticsearch:7.1.0
@@ -81,30 +104,12 @@ spec:
         - name: elastic-data
           mountPath: /usr/share/elasticsearch/data
         - name: elastic-config-vol
-          mountPath: /usr/share/elasticsearch/config/
-      securityContext:
-        fsGroup: 1000
+          mountPath: /usr/share/elasticsearch/config
+        securityContext:
+          # runAsUser: 1000
+          allowPrivilegeEscalation: true
+        #   fsGroup: 1000
 
-        # livenessProbe:
-        #   exec:
-        #     command: ["mysqladmin", "ping"]
-        #   initialDelaySeconds: 50
-        #   periodSeconds: 20
-        #   timeoutSeconds: 100
-        #   successThreshold: 1
-        #   failureThreshold: 10
-        # readinessProbe:
-        #   exec:
-        #     command:
-        #     - bash
-        #     - "-c"
-        #     - set -ex
-        #       /readiness.sh
-        #   initialDelaySeconds: 50
-        #   periodSeconds: 20
-        #   timeoutSeconds: 100
-        #   successThreshold: 2
-        #   failureThreshold: 10
       volumes:
       - name: elastic-config-vol
         configMap:

@@ -94,10 +94,10 @@ spec:
           name: logstash-config
           items:
           - key: config
-            path: logstashsearch.yml
+            path: logstash.yml
       - name: logstash-pipeline-vol
         configMap:
           name: logstash-pipeline
           items:
           - key: config
-            path: logstashsearch.conf
+            path: logstash.conf
