@@ -54,7 +54,7 @@ metadata:
     app: elastic
 spec:
   serviceName: elastic
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: elastic

@@ -1,1 +1,103 @@
 # This is the Logstash deployment file
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash-svc
+  labels:
+    app: logstash
+spec:
+  selector:
+    app: logstash
+  ports:
+  - name: logstash-tcp
+    port: 5000
+
+#######################################
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  labels:
+    app: logstash
+data:
+  config : |
+    ---
+    http.host: "0.0.0.0"
+    xpack.monitoring.elasticsearch.hosts: [ "http://elastic-svc:9200" ]
+    xpack.monitoring.elasticsearch.username: elastic
+    xpack.monitoring.elasticsearch.password: changeme
+#######################################
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-pipeline
+  labels:
+    app: logstash
+data:
+  config : |
+    input {
+      tcp {
+        port => 5000
+      }
+    }
+
+    ## Add your filters / logstash plugins configuration here
+
+    output {
+      elasticsearch {
+        hosts => "elasticsearch:9200"
+        user => elastic
+        password => changeme
+      }
+    }
+#######################################
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  labels:
+    app: logstash
+spec:
+  serviceName: logstash
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+    spec:
+      containers:
+      - name: logstash
+        image: docker.logstash.co/logstash/logstash:7.1.0
+        imagePullPolicy: Always
+        ports:
+        - name: logstash-tcp
+          containerPort: 5000
+        env:
+          - name: ES_JAVA_OPTS
+            value: -Xmx256m -Xms256m
+        volumeMounts:
+        - name: logstash-pipeline-vol
+          mountPath: /usr/share/logstash/pipeline/
+        - name: logstash-config-vol
+          mountPath: /usr/share/logstash/config/
+
+      volumes:
+      - name: logstash-config-vol
+        configMap:
+          name: logstash-config
+          items:
+          - key: config
+            path: logstashsearch.yml
+      - name: logstash-pipeline-vol
+        configMap:
+          name: logstash-pipeline
+          items:
+          - key: config
+            path: logstashsearch.conf
