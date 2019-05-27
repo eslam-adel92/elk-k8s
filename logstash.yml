@@ -62,7 +62,7 @@ metadata:
   labels:
     app: logstash
 spec:
-  serviceName: logstash
+  # serviceName: logstash
   replicas: 1
   selector:
     matchLabels:
@@ -74,7 +74,7 @@ spec:
     spec:
       containers:
       - name: logstash
-        image: docker.logstash.co/logstash/logstash:7.1.0
+        image: docker.elastic.co/logstash/logstash:7.1.0
         imagePullPolicy: Always
         ports:
         - name: logstash-tcp

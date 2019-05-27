@@ -82,6 +82,8 @@ spec:
           mountPath: /usr/share/elasticsearch/data
         - name: elastic-config-vol
           mountPath: /usr/share/elasticsearch/config/
+      securityContext:
+        fsGroup: 1000
 
         # livenessProbe:
         #   exec:
