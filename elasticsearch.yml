@@ -45,6 +45,7 @@ parameters:
   zone: us-central1-a
 
 #######################################
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
